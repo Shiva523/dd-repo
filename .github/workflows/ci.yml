@@ -48,3 +48,8 @@ jobs:
             "tags": ["env:ci", "service:github-actions-demo"],
             "alert_type": "success"
           }'
+      - name: Datadog CI Visibility
+        uses: DataDog/datadog-ci-github-action@v1
+        with:
+          api_key: ${{ secrets.DATADOG_API_KEY }}
+          site: ${{ secrets.DD_SITE }}
