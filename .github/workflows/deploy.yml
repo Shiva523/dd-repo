@@ -1,0 +1,42 @@
+name: Deploy Application
+
+on:
+  workflow_run:
+    workflows: ["CI Pipeline"]
+    types:
+      - completed
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    env:
+      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      DD_SITE: ${{ secrets.DD_SITE }}
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Image
+        run: |
+          docker build -t demo-app:latest .
+
+      - name: Simulate Deployment
+        run: |
+          echo "Deploying application..."
+          sleep 10
+          echo "Deployment successful"
+
+      - name: Send Deployment Event to Datadog
+        run: |
+          curl -X POST "https://api.${{ secrets.DD_SITE }}/api/v1/events" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+          -d '{
+            "title": "Deployment Completed",
+            "text": "Production deployment completed successfully.",
+            "priority": "normal",
+            "tags": ["env:production", "deployment:true"],
+            "alert_type": "success"
+          }'
