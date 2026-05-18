@@ -1,0 +1,50 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    env:
+      DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+      DD_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+      DD_SITE: ${{ secrets.DD_SITE }}
+      DD_ENV: ci
+      DD_SERVICE: github-actions-demo
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        working-directory: ./app
+        run: npm install
+
+      - name: Run Tests
+        working-directory: ./app
+        run: npm test
+
+      - name: Send Custom Event to Datadog
+        run: |
+          curl -X POST "https://api.${{ secrets.DD_SITE }}/api/v1/events" \
+          -H "Content-Type: application/json" \
+          -H "DD-API-KEY: ${{ secrets.DATADOG_API_KEY }}" \
+          -d '{
+            "title": "GitHub Actions CI Pipeline Completed",
+            "text": "CI workflow completed successfully.",
+            "priority": "normal",
+            "tags": ["env:ci", "service:github-actions-demo"],
+            "alert_type": "success"
+          }'
